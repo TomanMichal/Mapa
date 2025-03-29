@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Mapa výletů - Google Sheets</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* Výchozí velikost mapy */
+        #mapa {
+            width: 100%;
+            height: 600px;
+            transition: all 0.5s ease;
+        }
+
+        /* Tlačítko pro zvětšení/zmenšení mapy */
+        #resize-button {
+            display: block;
+            margin: 10px auto;
+            padding: 10px 20px;
+            background: #0078D7;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        /* Kontejner pro tlačítko */
+        .map-container {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Mapa výletů</h1>
+
+    <!-- Odkaz na Google Formulář -->
+    <p><a href="https://docs.google.com/forms/d/e/1FAIpQLSeAXrG46eK_EQYM9s-sIp99Bf7B_vDC2s3Sl9DtV3HWrBD3Ow/viewform?usp=dialog">➕ Přidat nové místo</a></p>
+
+    <div class="map-container">
+        <!-- Tlačítko pro zvětšení/zmenšení mapy -->
+        <button id="resize-button" onclick="toggleSize()">🔍 Zvětšit mapu</button>
+    </div>
+
+    <!-- Mapa -->
+    <div id="mapa"></div>
+
+    <!-- Leaflet JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // Inicializace mapy (střed: ČR)
+        var mapa = L.map('mapa').setView([50.087, 14.421], 7);
+
+        // Načtení OpenStreetMap dlaždic
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(mapa);
+
+        // Ikona fotoaparátu
+        var cameraIcon = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/685/685655.png',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+
+        // Načtení dat z Google Sheets
+        const sheetId = '1YgtoCBTJicz1NRdksY67vdVmT2xze33iHDcCE1C0GCI';
+        const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+
+        fetch(sheetUrl)
+            .then(response => response.text())
+            .then(data => {
+                // Parsování JSON dat z Google Sheets
+                const jsonData = JSON.parse(data.substring(47, data.length - 2));
+                const rows = jsonData.table.rows;
+
+                rows.forEach(row => {
+                    const nazev = row.c[1].v;  // Název
+                    const lat = parseFloat(row.c[2].v);  // Šířka
+                    const lng = parseFloat(row.c[3].v);  // Délka
+                    const url = row.c[4].v;  // URL fotek
+                    const kategorie = row.c[5].v;  // Kategorie
+
+                    // Přidání markeru na mapu
+                    L.marker([lat, lng], { icon: cameraIcon })
+                        .bindPopup(`<b>${nazev}</b><br><a href="${url}" target="_blank">Fotky z výletu</a><br>Kategorie: ${kategorie}`)
+                        .addTo(mapa);
+                });
+            })
+            .catch(error => console.error('Chyba při načítání dat:', error));
+
+        // Funkce pro zvětšení/zmenšení mapy
+        function toggleSize() {
+            const mapaDiv = document.getElementById('mapa');
+            const button = document.getElementById('resize-button');
+
+            if (mapaDiv.style.height === '90vh') {
+                mapaDiv.style.height = '600px';
+                button.innerHTML = '🔍 Zvětšit mapu';
+            } else {
+                mapaDiv.style.height = '90vh';
+                button.innerHTML = '🔙 Zmenšit mapu';
+            }
+
+            // Oprava vykreslení mapy po změně velikosti
+            setTimeout(() => mapa.invalidateSize(), 500);
+        }
+    </script>
+
+</body>
+
+</html>
